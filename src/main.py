@@ -68,7 +68,7 @@ def generate_page(from_path, template_path, dest_path, basepath):
     html = html_node.to_html()
     title = extract_title(content)
     htmlPage = template.replace('{{ Title }}', title).replace('{{ Content }}', html)
-    htmlPage = htmlPage.replace('href="/', 'href="{basepath}').replace('src="/', 'src="{basepath}')
+    htmlPage = htmlPage.replace('href="/', f'href="{basepath}docs/').replace('src="/', f'src="{basepath}docs/')
     
     
     destination = os.path.join(cwd, dest_path)
