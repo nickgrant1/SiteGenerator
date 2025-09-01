@@ -30,7 +30,7 @@ class LeafNode(HTMLNode):
         if self.tag == 'a':
             return f'<a href="{self.props['href']}">{self.value}</a>'
         elif self.tag == 'img':
-            return f'img src="{self.props['src']}" alt="{self.props['alt']}"'
+            return f'<img src="{self.props['src']}" alt="{self.props['alt']}">'
         else:
             return f'<{self.tag}>{self.value}</{self.tag}>'
 
