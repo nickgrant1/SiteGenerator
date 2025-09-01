@@ -4,7 +4,7 @@ from htmlnode import *
 from textnode import *
 class BlockType(Enum):
     PARAGRAPH = 'p'
-    HEADING = 'h{}'
+    HEADING = 'h'
     CODE = 'code'
     QUOTE = 'blockquote'
     UL = 'ul'
@@ -37,35 +37,39 @@ def markdown_to_html_node(markdown):
         code_block = block
         block = re.sub(r"\s+", " ", block)
         block_type = block_to_block_type(block)
-        block_node = HTMLNode(block_type.value)
+        block_node = HTMLNode()
         if block_type == BlockType.HEADING:
-            headingLevel = len(re.match(r"#{1,6}", block)[0])
-            block_node.tag = BlockType.HEADING.value.format(headingLevel)
-            block_node.value = block[headingLevel+1:]
+            headingLevel = len(re.match(r"#{1,6}", block).group(0))
+            block_node.tag = block_type.value + str(headingLevel)
+            block_node.value = block[headingLevel+1:].lstrip()
         elif block_type == BlockType.PARAGRAPH:
             block_node.value = block
+            block_node.tag = block_type.value
         elif block_type == BlockType.CODE:
             code_text = code_block[3:-3].lstrip()
             code_node = LeafNode('code', code_text)
             block_node = ParentNode('pre', [code_node])
         elif block_type == BlockType.QUOTE:
-            lines = [line.lstrip('>') for line in block.splitlines()]
+            lines = [line.lstrip('> ') for line in block.splitlines()]
             block_node.value = "\n".join(lines)
+            block_node.tag = block_type.value
         elif block_type == BlockType.UL:
-            lines = [line.lstrip('- ') for line in block.splitlines()]
-            lines = [f'<li>{line}</li>' for line in lines]
-            block_node.value = "\n".join(lines)
+            lines = re.split(r'- ', block)
+            lines = [f'<li>{line.strip()}</li>' for line in lines if line]
+            block_node.value = ''.join(lines)
+            block_node.tag = block_type.value
         elif block_type == BlockType.OL:
-            lines = [re.sub(r"^\d+\. ", "", line) for line in block.splitlines()]
-            lines = [f'<li>{line}</li>' for line in lines]
-            block_node.value = '\n'.join(lines)
+            lines = re.split(r'\d+\. ', block)
+            lines = [f'<li>{line.strip()}</li>' for line in lines if line]
+            block_node.value = ''.join(lines)
+            block_node.tag = block_type.value
         else:
             raise ValueError("block_type isn't a BlockType")
         if block_type != BlockType.CODE:
             children_nodes = text_to_children(block_node.value)
             if not children_nodes:
                 children_nodes = [LeafNode(None, block_node.value)]
-            block_node = ParentNode(block_type.value, children_nodes)
+            block_node = ParentNode(block_node.tag, children_nodes)
         children.append(block_node)
 
     return ParentNode('div', children)
