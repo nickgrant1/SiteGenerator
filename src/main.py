@@ -1,10 +1,14 @@
-import os, shutil, re
+import os, shutil, re, sys
 from blocks import markdown_to_html_node
 from htmlnode import *
 
 def main():
-    copy_contents('static', 'public')
-    generate_pages_recursive('content', 'template.html', 'public')
+    copy_contents('static', 'docs')
+    basepath = '/'
+    if len(sys.argv)>1:
+        basepath = sys.argv[1].strip()
+    generate_pages_recursive('content', 'template.html', 'docs', basepath)
+
 
 def copy_contents(src, dest):
     cwd = os.getcwd()
@@ -35,25 +39,25 @@ def extract_title(markdown):
     else:
         raise Exception('Missing Title')
 
-def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
+def generate_pages_recursive(dir_path_content, template_path, dest_dir_path, basepath):
     cwd = os.getcwd()
     content_path = os.path.join(cwd, dir_path_content)
 
-    for thing in os.listdir(content_path):
+    for thing in os.listdir(content_path): #recursively generate pages
         path = os.path.join(content_path, thing)
         if os.path.isdir(path):
             new_dest_dir_path = os.path.relpath(path, cwd)
-            new_dest_dir_path = path.replace('content', 'public')
-            generate_pages_recursive(os.path.relpath(path, cwd), template_path, dest_dir_path)
+            new_dest_dir_path = path.replace('content', 'docs')
+            generate_pages_recursive(os.path.relpath(path, cwd), template_path, dest_dir_path, basepath)
         elif thing[-3:] == '.md':
-            dest = path.replace("content", 'public').replace('.md', '.html')
+            dest = path.replace("content", 'docs').replace('.md', '.html')
             dest = os.path.relpath(dest, cwd)
-            generate_page(os.path.relpath(path, cwd), template_path, dest)
+            generate_page(os.path.relpath(path, cwd), template_path, dest, basepath)
         else:
             continue
 
 
-def generate_page(from_path, template_path, dest_path):
+def generate_page(from_path, template_path, dest_path, basepath):
     print(f"Generating page from {from_path} to {dest_path} using {template_path}")
     cwd = os.getcwd()
     with open(os.path.join(cwd, from_path), "r") as md:
@@ -64,6 +68,8 @@ def generate_page(from_path, template_path, dest_path):
     html = html_node.to_html()
     title = extract_title(content)
     htmlPage = template.replace('{{ Title }}', title).replace('{{ Content }}', html)
+    htmlPage = htmlPage.replace('href="/', 'href="{basepath}').replace('src="/', 'src="{basepath}')
+    
     
     destination = os.path.join(cwd, dest_path)
     if not os.path.exists(destination):
